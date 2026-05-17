@@ -87,6 +87,25 @@ Type `help`, `/SET`, or `exit`.
 4. Augment the AI prompt with that context  
 5. Generate an answer grounded in the corpus  
 
+## Technologies
+
+| Layer | Technology | Role |
+|-------|------------|------|
+| Language | Python 3.11+ | Application runtime |
+| Packaging | `venv`, `pip`, `setuptools` | Dependency install; editable package layout |
+| Embeddings | [sentence-transformers](https://www.sbert.net/) (`all-MiniLM-L6-v2`) | Semantic vectors for FAQ retrieval (`balanced` / `quality` profiles) |
+| Embeddings (light) | [scikit-learn](https://scikit-learn.org/) TF-IDF | Lexical fallback for low-RAM machines |
+| Vector search | [NumPy](https://numpy.org/) | In-memory cosine similarity (no external vector DB) |
+| LLM | [Ollama](https://ollama.com) | Local inference (`llama3.2:3b` default; profiles swap model size) |
+| LLM API | `requests` | HTTP client for Ollama chat API |
+| CLI / UX | [Rich](https://rich.readthedocs.io/) | Terminal styling, tables, progress spinners |
+| System checks | `psutil` | RAM hints in `doctor` |
+| Corpus | Plain-text FAQ (`data/devcolorfaq.txt`) | Source knowledge base |
+| Cache | JSON + `.npy` on disk (`.cache/index/`) | Persisted embedding index between runs |
+| Observability | `.log` + `.json` per turn (`logs/`) | Human-readable and structured RAG traces |
+
+**Architecture pattern:** Retrieval-Augmented Generation (RAG) — retrieve relevant FAQ context, augment the prompt, generate with a local LLM. No cloud API keys required.
+
 ## Design
 
 | Piece | Choice |
