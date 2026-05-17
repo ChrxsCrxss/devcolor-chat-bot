@@ -66,7 +66,12 @@ def prepare_environment(
 
     if not skip_setup and setup_needed(profile):
         if not run_setup(profile_name, console=console):
-            console.print("[warning]Continuing in demo mode (Ollama unavailable).[/warning]")
+            console.print(
+                "\n[error]Ollama is required for full answers.[/error]\n"
+                "[meta]After installing, run:[/meta] [bold]devcolorbot setup[/bold]\n"
+                "[meta]Offline demo only:[/meta] [bold]devcolorbot --echo[/bold]\n"
+            )
+            sys.exit(1)
 
     if skip_index:
         return
@@ -254,7 +259,9 @@ def run_doctor(console: Console, config: SessionConfig) -> None:
                 f"ollama pull {profile.llm_model}[/warning]"
             )
     else:
-        console.print("[error]Ollama: not reachable (start Ollama or use --echo)[/error]")
+        console.print(
+            "[error]Ollama: not reachable[/error] — run [bold]devcolorbot setup[/bold]"
+        )
 
     status = check_cache(CORPUS_PATH, get_profile(config.profile), _project_root())
     console.print(f"Cache:  {status}")

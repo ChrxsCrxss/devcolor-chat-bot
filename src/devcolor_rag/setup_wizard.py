@@ -1,4 +1,4 @@
-"""First-time setup: Ollama install + recommended model download (CLI-only, no GUI)."""
+"""First-time setup: install Ollama + download the recommended model."""
 
 from __future__ import annotations
 
@@ -19,23 +19,62 @@ from devcolor_rag.spinner import run_with_spinner
 from devcolor_rag.theme import DEVCOLOR_THEME
 
 OLLAMA_INSTALL_URL = "https://ollama.com/install.sh"
+OLLAMA_WINDOWS_URL = "https://ollama.com/download/windows"
 
-# Common install locations after install.sh
-_OLLAMA_CANDIDATES = (
-    "ollama",
+# Unix / macOS paths after install.sh or Homebrew
+_UNIX_OLLAMA_PATHS = (
     "/usr/local/bin/ollama",
+    "/usr/bin/ollama",
     "/Applications/Ollama.app/Contents/Resources/ollama",
 )
 
+_serve_proc: subprocess.Popen[bytes] | None = None
+_resolved_binary: str | None = None
+
+
+def _windows_ollama_paths() -> list[Path]:
+    paths: list[Path] = []
+    local = os.environ.get("LOCALAPPDATA")
+    if local:
+        paths.append(Path(local) / "Programs" / "Ollama" / "ollama.exe")
+    for env_key in ("ProgramFiles", "ProgramFiles(x86)"):
+        root = os.environ.get(env_key)
+        if root:
+            paths.append(Path(root) / "Ollama" / "ollama.exe")
+    return paths
+
 
 def ollama_binary() -> str | None:
-    for candidate in _OLLAMA_CANDIDATES:
-        if candidate == "ollama":
-            found = shutil.which("ollama")
-            if found:
-                return found
-        elif Path(candidate).is_file():
-            return candidate
+    """Return path to the Ollama CLI, searching PATH and known install locations."""
+    global _resolved_binary
+    if _resolved_binary and Path(_resolved_binary).is_file():
+        return _resolved_binary
+
+    found = shutil.which("ollama")
+    if found:
+        _resolved_binary = found
+        return found
+
+    for path in _UNIX_OLLAMA_PATHS:
+        if Path(path).is_file():
+            _resolved_binary = path
+            return path
+
+    for path in _windows_ollama_paths():
+        if path.is_file():
+            _resolved_binary = str(path)
+            return _resolved_binary
+
+    return None
+
+
+def wait_for_ollama_binary(*, timeout_sec: int = 90) -> str | None:
+    """Poll until the CLI appears (e.g. after winget or install.sh)."""
+    for _ in range(timeout_sec):
+        binary = ollama_binary()
+        if binary:
+            return binary
+        time.sleep(1)
     return None
 
 
@@ -43,24 +82,30 @@ def model_available(model: str) -> bool:
     ok, models = check_ollama()
     if not ok:
         return False
-    return any(model.split(":")[0] in m for m in models)
+    base = model.split(":")[0]
+    return any(base in m for m in models)
 
 
 def setup_needed(profile: Profile) -> bool:
     if not ollama_binary():
         return True
+    if not check_ollama()[0]:
+        return True
     return not model_available(profile.llm_model)
 
 
 def _run_install_script(console: Console) -> bool:
-    """Download and run ollama.com/install.sh without launching the GUI."""
-    if not shutil.which("curl"):
+    """Linux/macOS: ollama.com/install.sh (no GUI on macOS when OLLAMA_NO_START=1)."""
+    if platform.system() == "Windows":
+        return False
+    if not shutil.which("curl") or not shutil.which("sh"):
+        console.print("[warning]Need curl and sh to run the Ollama install script.[/warning]")
         return False
 
     console.print(
         f"[accent]Downloading Ollama from [link={OLLAMA_INSTALL_URL}]{OLLAMA_INSTALL_URL}[/link]…[/accent]"
     )
-    console.print("[meta]This runs in the terminal only — the Ollama app window will not open.[/meta]")
+    console.print("[meta]Terminal install only — no browser required on macOS/Linux.[/meta]")
     env = {**os.environ, "OLLAMA_NO_START": "1"}
     try:
         proc = subprocess.run(
@@ -68,9 +113,11 @@ def _run_install_script(console: Console) -> bool:
             env=env,
             text=True,
         )
-        if proc.returncode == 0 and ollama_binary():
-            console.print("[success]✓ Ollama installed[/success]")
-            return True
+        if proc.returncode == 0:
+            binary = wait_for_ollama_binary(timeout_sec=60)
+            if binary:
+                console.print("[success]✓ Ollama installed[/success]")
+                return True
     except OSError as exc:
         console.print(f"[warning]{exc}[/warning]")
     return False
@@ -83,7 +130,8 @@ def _install_via_homebrew(console: Console) -> bool:
     console.print("[accent]Installing Ollama via Homebrew…[/accent]")
     try:
         subprocess.run([brew, "install", "--cask", "ollama"], check=True, text=True)
-        if ollama_binary():
+        binary = wait_for_ollama_binary(timeout_sec=60)
+        if binary:
             console.print("[success]✓ Ollama installed[/success]")
             return True
     except subprocess.CalledProcessError:
@@ -91,34 +139,94 @@ def _install_via_homebrew(console: Console) -> bool:
     return False
 
 
+def _install_via_winget(console: Console) -> bool:
+    winget = shutil.which("winget")
+    if not winget:
+        return False
+    console.print("[accent]Installing Ollama via winget…[/accent]")
+    try:
+        proc = subprocess.run(
+            [
+                winget,
+                "install",
+                "-e",
+                "--id",
+                "Ollama.Ollama",
+                "--accept-package-agreements",
+                "--accept-source-agreements",
+            ],
+            text=True,
+        )
+        if proc.returncode == 0:
+            binary = wait_for_ollama_binary(timeout_sec=120)
+            if binary:
+                console.print("[success]✓ Ollama installed[/success]")
+                return True
+    except OSError as exc:
+        console.print(f"[warning]{exc}[/warning]")
+    return False
+
+
+def _print_manual_install_help(console: Console) -> None:
+    system = platform.system()
+    console.print("[error]Automatic Ollama install did not complete.[/error]")
+    if system == "Windows":
+        console.print(
+            f"[meta]Install manually, then run [bold]devcolorbot setup[/bold] again:[/meta]\n"
+            f"  winget install -e --id Ollama.Ollama\n"
+            f"  — or download from [link={OLLAMA_WINDOWS_URL}]{OLLAMA_WINDOWS_URL}[/link]"
+        )
+    else:
+        console.print(
+            f"[meta]Install manually, then run [bold]devcolorbot setup[/bold] again:[/meta]\n"
+            f"  curl -fsSL {OLLAMA_INSTALL_URL} | sh"
+        )
+
+
 def install_ollama(console: Console) -> bool:
-    """Install Ollama CLI via URL — no browser, no menu-bar app launch."""
+    """Install Ollama for the current OS."""
     if ollama_binary():
         console.print("[success]✓ Ollama CLI already installed[/success]")
         return True
 
-    def _try_install() -> bool:
-        if _run_install_script(console):
-            return True
-        if platform.system() == "Darwin" and _install_via_homebrew(console):
-            return True
-        return False
+    system = platform.system()
 
-    if run_with_spinner(console, "Installing Ollama (terminal only, no app window)…", _try_install):
+    def _try_install() -> bool:
+        if system == "Windows":
+            return _install_via_winget(console)
+        if system == "Darwin":
+            if _run_install_script(console):
+                return True
+            return _install_via_homebrew(console)
+        # Linux and other Unix
+        return _run_install_script(console)
+
+    if run_with_spinner(
+        console,
+        f"Installing Ollama ({system})…",
+        _try_install,
+    ):
         return True
 
-    console.print(
-        f"[error]Could not install Ollama automatically.[/error]\n"
-        f"[meta]Run manually:  curl -fsSL {OLLAMA_INSTALL_URL} | sh[/meta]"
-    )
+    # Install may have succeeded but PATH not refreshed yet
+    binary = wait_for_ollama_binary(timeout_sec=15)
+    if binary:
+        console.print("[success]✓ Ollama installed[/success]")
+        return True
+
+    _print_manual_install_help(console)
     return ollama_binary() is not None
 
 
-_serve_proc: subprocess.Popen[bytes] | None = None
+def _popen_kwargs() -> dict:
+    if platform.system() == "Windows":
+        # Detached background process, no extra console window
+        return {"creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0)}
+    return {"start_new_session": True}
 
 
 def start_ollama_service(console: Console) -> bool:
-    """Start `ollama serve` in the background — never open the Ollama.app window."""
+    """Ensure the Ollama API is reachable at localhost:11434."""
     global _serve_proc
 
     if check_ollama()[0]:
@@ -130,16 +238,32 @@ def start_ollama_service(console: Console) -> bool:
         console.print("[error]Ollama CLI not found after install.[/error]")
         return False
 
+    # Windows/macOS installers often start the server automatically
+    console.print("[accent]Waiting for Ollama API…[/accent]")
+    with Progress(
+        SpinnerColumn(style="accent"),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+        transient=True,
+    ) as progress:
+        task = progress.add_task("Checking localhost:11434…", total=None)
+        for _ in range(30):
+            if check_ollama()[0]:
+                progress.update(task, description="Ollama is ready")
+                console.print("[success]✓ Ollama server running[/success]")
+                return True
+            time.sleep(1)
+
     console.print("[accent]Starting Ollama server in the background…[/accent]")
     _serve_proc = subprocess.Popen(
         [binary, "serve"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
-        start_new_session=True,
+        **_popen_kwargs(),
     )
 
     with Progress(
-        SpinnerColumn(),
+        SpinnerColumn(style="accent"),
         TextColumn("[progress.description]{task.description}"),
         console=console,
         transient=True,
@@ -153,8 +277,8 @@ def start_ollama_service(console: Console) -> bool:
             time.sleep(1)
 
     console.print(
-        "[error]Ollama did not start in time.[/error] "
-        "[meta]Try: ollama serve[/meta]"
+        "[error]Ollama did not start in time.[/error]\n"
+        "[meta]On Windows, open the Ollama app once, or run: ollama serve[/meta]"
     )
     return False
 
@@ -206,32 +330,40 @@ def run_setup(
     *,
     console: Console | None = None,
     skip_install: bool = False,
+    max_attempts: int = 2,
 ) -> bool:
-    """Full first-time setup. Returns True if devcolorbot can use the LLM."""
+    """Install Ollama, start API, pull model. Returns True when the LLM is usable."""
     console = console or Console(theme=DEVCOLOR_THEME)
     profile = get_profile(profile_name)
     model = profile.llm_model
 
     console.print()
-    console.print("[banner.title]devColorBot — getting ready[/banner.title]")
-    console.print("[meta]Setting up local AI (first time only)…[/meta]\n")
+    console.print("[banner.title]devColorBot — setting up Ollama[/banner.title]")
+    console.print("[meta]Local AI is required; installing if missing…[/meta]\n")
 
     if model_available(model) and check_ollama()[0]:
         console.print(f"[success]✓ Already set up ({model} is available)[/success]\n")
         return True
 
-    if not skip_install:
-        if not install_ollama(console):
-            return False
-    elif not ollama_binary():
-        console.print("[error]Ollama not found.[/error]")
-        return False
+    for attempt in range(1, max_attempts + 1):
+        if attempt > 1:
+            console.print(f"[accent]Retrying setup (attempt {attempt}/{max_attempts})…[/accent]\n")
 
-    if not start_ollama_service(console):
-        return False
-
-    if not model_available(model):
-        if not pull_model(console, model):
+        if not skip_install:
+            if not install_ollama(console):
+                continue
+        elif not ollama_binary():
+            console.print("[error]Ollama not found. Run without --skip-install.[/error]")
             return False
 
-    return True
+        if not start_ollama_service(console):
+            continue
+
+        if not model_available(model):
+            if not pull_model(console, model):
+                continue
+
+        return True
+
+    _print_manual_install_help(console)
+    return False

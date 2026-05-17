@@ -44,9 +44,11 @@ devcolorbot
 **First run** automatically:
 
 1. Creates `.venv` and installs Python dependencies  
-2. Installs Ollama via [ollama.com/install.sh](https://ollama.com/install.sh) in the terminal (no app window) and downloads the model (`llama3.2:3b`)  
+2. **Installs Ollama** if missing (macOS/Linux: [install.sh](https://ollama.com/install.sh); Windows: `winget install Ollama.Ollama`), starts the API, and downloads the model (`llama3.2:3b`)  
 3. Builds the FAQ vector index (cached under `.cache/index/`)  
 4. Opens the chat  
+
+If setup fails, the bot exits with instructions — run `devcolorbot setup` to retry. Use `--echo` only for an offline FAQ demo without Ollama.
 
 **Later runs** start the chat right away (index and model are cached).
 
@@ -71,8 +73,9 @@ Type `help`, `/SET`, or `exit`.
 | `--doctor` | Check Python, RAM, Ollama, and cache |
 | `--once "question"` | Single answer, then exit |
 | `--profile light` | Smaller model for low-RAM Macs |
-| `--echo` | Offline demo without Ollama |
-| `--skip-setup` | Skip Ollama install/model download |
+| `--echo` | Offline FAQ demo without Ollama (no install attempted) |
+| `--skip-setup` | Skip Ollama install (fails at chat if Ollama is not already running) |
+| `devcolorbot setup` | Install/repair Ollama and pull the model |
 | `--debug` | Extra retrieval detail |
 
 ## About /dev/color

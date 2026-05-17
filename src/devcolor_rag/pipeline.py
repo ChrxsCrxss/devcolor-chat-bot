@@ -38,13 +38,10 @@ class RAGPipeline:
         index: VectorIndex,
         llm: LLM,
         project_root: Path,
-        *,
-        use_echo_fallback: bool = True,
     ) -> None:
         self.index = index
         self.llm = llm
         self.project_root = project_root
-        self.use_echo_fallback = use_echo_fallback
         self.session_id = uuid.uuid4().hex[:8]
         self.turn = 0
         self._last_retrieval: RetrievalResult | None = None
@@ -69,7 +66,7 @@ class RAGPipeline:
             llm: LLM = EchoLLM(model)
         else:
             llm = OllamaLLM(model)
-        return cls(index, llm, project_root, use_echo_fallback=not use_echo)
+        return cls(index, llm, project_root)
 
     def reload_index(self, profile: Profile, *, wipe: bool = False) -> None:
         corpus = self.project_root / "data" / "devcolorfaq.txt"
@@ -117,13 +114,10 @@ class RAGPipeline:
             system_prompt, user_prompt = build_prompts(text, retrieval.parent_entries)
             try:
                 response = self.llm.generate(system_prompt, user_prompt)
-            except RuntimeError:
-                if self.use_echo_fallback:
-                    echo = EchoLLM("echo-fallback")
-                    response = echo.generate(system_prompt, user_prompt)
-                    skip_reason = "ollama_fallback_echo"
-                else:
-                    raise
+            except RuntimeError as exc:
+                raise RuntimeError(
+                    f"{exc}\n\nOllama is not ready. Run: devcolorbot setup"
+                ) from exc
 
         response = plain_terminal_text(response)
 
