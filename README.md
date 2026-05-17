@@ -142,6 +142,8 @@ First run downloads ~2GB for the Ollama model plus embedding dependencies.
 
 ## Sample output
 
+![Sample CLI session](docs/sample_output.png)
+
 See [`sample_output.txt`](sample_output.txt) for the three assignment demo questions. Regenerate after Ollama is running:
 
 ```bash
