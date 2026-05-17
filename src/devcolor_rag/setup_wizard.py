@@ -15,6 +15,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from devcolor_rag.llm import check_ollama
 from devcolor_rag.profiles import Profile, get_profile
+from devcolor_rag.spinner import run_with_spinner
 from devcolor_rag.theme import DEVCOLOR_THEME
 
 OLLAMA_INSTALL_URL = "https://ollama.com/install.sh"
@@ -96,10 +97,14 @@ def install_ollama(console: Console) -> bool:
         console.print("[success]✓ Ollama CLI already installed[/success]")
         return True
 
-    if _run_install_script(console):
-        return True
+    def _try_install() -> bool:
+        if _run_install_script(console):
+            return True
+        if platform.system() == "Darwin" and _install_via_homebrew(console):
+            return True
+        return False
 
-    if platform.system() == "Darwin" and _install_via_homebrew(console):
+    if run_with_spinner(console, "Installing Ollama (terminal only, no app window)…", _try_install):
         return True
 
     console.print(
@@ -160,10 +165,9 @@ def pull_model(console: Console, model: str) -> bool:
         return False
 
     console.print(
-        f"[accent]Downloading model [bold]{model}[/bold] from Ollama "
-        f"(first time only, ~2GB)…[/accent]"
+        f"[accent]Downloading [bold]{model}[/bold] "
+        f"(first time only, ~2GB over the network)…[/accent]"
     )
-    console.print("[meta]Fetched over the network — please wait.[/meta]\n")
     try:
         proc = subprocess.Popen(
             [binary, "pull", model],
@@ -172,10 +176,17 @@ def pull_model(console: Console, model: str) -> bool:
             text=True,
         )
         assert proc.stdout is not None
-        for line in proc.stdout:
-            line = line.rstrip()
-            if line:
-                console.print(f"[muted]{line}[/muted]")
+        with Progress(
+            SpinnerColumn(style="accent"),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+            transient=True,
+        ) as progress:
+            task = progress.add_task(f"Pulling {model}…", total=None)
+            for line in proc.stdout:
+                line = line.rstrip()
+                if line:
+                    progress.update(task, description=line[:72])
         proc.wait()
         if proc.returncode != 0:
             console.print(f"[error]Failed to pull {model}[/error]")

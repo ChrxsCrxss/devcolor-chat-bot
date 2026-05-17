@@ -1,13 +1,22 @@
 #!/usr/bin/env bash
 # devcolorbot — one command: venv + deps, Ollama, index, chat.
-# Run: ./devcolorbot   OR add this directory to PATH and run: devcolorbot
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 VENV_PY="$ROOT/.venv/bin/python"
 
-if [[ ! -x "$VENV_PY" ]]; then
+_venv_ready() {
+  [[ -x "$VENV_PY" ]] && "$VENV_PY" -c "import devcolor_rag" 2>/dev/null
+}
+
+if ! _venv_ready; then
+  echo "▸ Creating virtual environment…" >&2
   python3 -m venv "$ROOT/.venv"
-  "$ROOT/.venv/bin/pip" install -q -e "$ROOT"
+  echo "▸ Installing dependencies (first run can take a few minutes)…" >&2
+  if ! "$ROOT/.venv/bin/pip" install -e "$ROOT"; then
+    echo "✗ pip install failed. Check Python 3.11+ and network." >&2
+    exit 1
+  fi
+  echo "▸ Dependencies installed." >&2
 fi
 
-exec "$VENV_PY" -m devcolor_rag.launcher "$@"
+exec "$VENV_PY" -u -m devcolor_rag.launcher "$@"

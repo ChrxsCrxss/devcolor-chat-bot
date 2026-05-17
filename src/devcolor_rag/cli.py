@@ -24,6 +24,7 @@ from devcolor_rag.profiles import PROFILES, get_profile
 from devcolor_rag.paths import CORPUS_PATH, PROJECT_ROOT
 from devcolor_rag.retriever import RetrievalResult
 from devcolor_rag.setup_wizard import run_setup, setup_needed
+from devcolor_rag.spinner import run_with_spinner, spin
 from devcolor_rag.theme import BOT_LABEL, DEVCOLOR_THEME, USER_TAG
 
 HELP_TEXT = """
@@ -64,24 +65,32 @@ def prepare_environment(
     profile = get_profile(profile_name)
 
     if not skip_setup and setup_needed(profile):
-        run_setup(profile_name, console=console)
+        if not run_setup(profile_name, console=console):
+            console.print("[warning]Continuing in demo mode (Ollama unavailable).[/warning]")
 
     if skip_index:
         return
 
     cache_status = check_cache(CORPUS_PATH, profile, PROJECT_ROOT)
     if cache_status != "valid" or force_reindex:
-        console.print("[accent]Building FAQ knowledge index…[/accent]")
-        get_or_build_index(
-            CORPUS_PATH,
-            profile,
-            PROJECT_ROOT,
-            force_reindex=force_reindex or cache_status == "stale",
-            wipe=wipe,
+
+        def _build_index() -> None:
+            get_or_build_index(
+                CORPUS_PATH,
+                profile,
+                PROJECT_ROOT,
+                force_reindex=force_reindex or cache_status == "stale",
+                wipe=wipe,
+            )
+
+        run_with_spinner(
+            console,
+            "Building FAQ knowledge index (first run may download embeddings)…",
+            _build_index,
         )
         console.print("[success]✓ Index ready[/success]\n")
     else:
-        console.print("[muted]Knowledge index loaded from cache[/muted]")
+        console.print("[muted]Knowledge index ready (cached)[/muted]")
 
 
 def _make_console(no_color: bool) -> Console:
@@ -328,7 +337,8 @@ def _process_query(
 ) -> str:
     if echo_user:
         _print_user_message(console, query)
-    result = pipeline.query(query, config)
+    with spin(console, "Thinking…"):
+        result = pipeline.query(query, config)
     if config.sources or config.debug:
         _print_sources(console, result.retrieval, debug=config.debug)
     _print_bot_message(console, result.answer)
@@ -359,7 +369,7 @@ def run_repl(
             break
         if status == "handled":
             continue
-        _process_query(line, console, config, pipeline, echo_user=True)
+        _process_query(line, console, config, pipeline, echo_user=False)
 
 
 def run_once(
@@ -446,6 +456,7 @@ def app_main() -> None:
     )
 
     console = _make_console(args.no_color)
+    console.print("[accent]devColorBot starting…[/accent]", highlight=False)
 
     if args.doctor:
         run_doctor(console, config)
@@ -465,15 +476,19 @@ def app_main() -> None:
         )
 
     profile = get_profile(config.profile)
-    pipeline = RAGPipeline.from_profile(
-        CORPUS_PATH,
-        _project_root(),
-        profile,
-        llm_model_override=config.llm_model_override,
-        force_reindex=False,
-        wipe=False,
-        use_echo=args.echo,
-    )
+
+    def _load_pipeline() -> RAGPipeline:
+        return RAGPipeline.from_profile(
+            CORPUS_PATH,
+            _project_root(),
+            profile,
+            llm_model_override=config.llm_model_override,
+            force_reindex=False,
+            wipe=False,
+            use_echo=args.echo,
+        )
+
+    pipeline = run_with_spinner(console, "Starting chat session…", _load_pipeline)
 
     if args.once:
         run_once(pipeline, config, args.once, no_color=args.no_color)
