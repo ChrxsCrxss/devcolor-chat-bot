@@ -1,0 +1,131 @@
+/dev/color RAG — Sample Output
+Generated: Sat May 16 19:23:53 UTC 2026
+Profile: balanced (use --echo if Ollama unavailable)
+========================================
+Ollama not detected — using --echo mode
+
+----------------------------------------
+USER: How can /dev/color help me develop my career?
+----------------------------------------
+
+                                    Sources                                     
+┏━━━━━┳━━━━━━━━━┳━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ #   ┃   Score ┃ FAQ  ┃ Question                                              ┃
+┡━━━━━╇━━━━━━━━━╇━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ 1   │   0.754 │ 1    │ What is the mission of /dev/color?                    │
+│ 2   │   0.740 │ 1    │ What is the mission of /dev/color?                    │
+│ 3   │   0.734 │ 1    │ What is the mission of /dev/color?                    │
+│ 4   │   0.722 │ 6    │ How does /dev/color collaborate with other            │
+│     │         │      │ organizations and…                                    │
+│ 5   │   0.690 │ 6    │ How does /dev/color collaborate with other            │
+│     │         │      │ organizations and…                                    │
+└─────┴─────────┴──────┴───────────────────────────────────────────────────────┘
+╭─────────────────────────────────── Answer ───────────────────────────────────╮
+│                                                                              │
+│  [Demo mode — start Ollama for full LLM answers]                             │
+│                                                                              │
+│  Based on the retrieved /dev/color FAQ:                                      │
+│                                                                              │
+│  • What is the mission of /dev/color?: /dev/color is dedicated to            │
+│  supporting and empowering Black technologists by fostering a strong         │
+│  community, providing career development resources, and advocating for       │
+│  diversity in the tech industry. The organization aims to help Black         │
+│  software engineers, founders, and leaders navigate challenges and a         │
+│                                                                              │
+│  • How does /dev/color collaborate with other organizations and tech         │
+│  companies?: In 2023, /dev/color partnered with organizations like Black     │
+│  Product Managers Network, ColorStack, and Goodie Nation to expand its       │
+│  reach and impact. The organization also collaborated with corporate         │
+│  partners such as Pinterest, Grammarly, and Concrete Rose Capital to host    │
+│  panels, networking events, an                                               │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+----------------------------------------
+USER: How can I contribute to /dev/color?
+----------------------------------------
+
+                                    Sources                                     
+┏━━━━━┳━━━━━━━━━┳━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ #   ┃   Score ┃ FAQ  ┃ Question                                              ┃
+┡━━━━━╇━━━━━━━━━╇━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ 1   │   0.743 │ 10   │ How can individuals or companies contribute to        │
+│     │         │      │ /dev/color’s …                                        │
+│ 2   │   0.738 │ 1    │ What is the mission of /dev/color?                    │
+│ 3   │   0.720 │ 1    │ What is the mission of /dev/color?                    │
+│ 4   │   0.715 │ 1    │ What is the mission of /dev/color?                    │
+│ 5   │   0.715 │ 6    │ How does /dev/color collaborate with other            │
+│     │         │      │ organizations and…                                    │
+└─────┴─────────┴──────┴───────────────────────────────────────────────────────┘
+╭─────────────────────────────────── Answer ───────────────────────────────────╮
+│                                                                              │
+│  [Demo mode — start Ollama for full LLM answers]                             │
+│                                                                              │
+│  Based on the retrieved /dev/color FAQ:                                      │
+│                                                                              │
+│  • How can individuals or companies contribute to /dev/color’s mission?:     │
+│  Individuals can support /dev/color by making financial contributions,       │
+│  participating in mentorship programs, and advocating for diversity in       │
+│  tech. Companies can collaborate by sponsoring events, providing funding,    │
+│  or offering professional development opportunities for Black                │
+│  technologists. These contr                                                  │
+│                                                                              │
+│  • What is the mission of /dev/color?: /dev/color is dedicated to            │
+│  supporting and empowering Black technologists by fostering a strong         │
+│  community, providing career development resources, and advocating for       │
+│  diversity in the tech industry. The organization aims to help Black         │
+│  software engineers, founders, and leaders navigate challenges and a         │
+│                                                                              │
+│  • How does /dev/color collaborate with other organizations and tech         │
+│  companies?: In 2023, /dev/color partnered with organizations like Black     │
+│  Product Managers Network, ColorStack, and Goodie Nation to expand its       │
+│  reach and impact. The organization also collaborated with corporate         │
+│  partners such as Pinterest, Grammarly, and Concrete Rose Capital to host    │
+│  panels, networking events, an                                               │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+----------------------------------------
+USER: In which cities is /dev/color located?
+----------------------------------------
+
+                                    Sources                                     
+┏━━━━━┳━━━━━━━━━┳━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ #   ┃   Score ┃ FAQ  ┃ Question                                              ┃
+┡━━━━━╇━━━━━━━━━╇━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ 1   │   0.681 │ 1    │ What is the mission of /dev/color?                    │
+│ 2   │   0.657 │ 1    │ What is the mission of /dev/color?                    │
+│ 3   │   0.649 │ 1    │ What is the mission of /dev/color?                    │
+│ 4   │   0.645 │ 5    │ What types of events and networking opportunities     │
+│     │         │      │ does /dev/…                                           │
+│ 5   │   0.635 │ 6    │ How does /dev/color collaborate with other            │
+│     │         │      │ organizations and…                                    │
+└─────┴─────────┴──────┴───────────────────────────────────────────────────────┘
+╭─────────────────────────────────── Answer ───────────────────────────────────╮
+│                                                                              │
+│  [Demo mode — start Ollama for full LLM answers]                             │
+│                                                                              │
+│  Based on the retrieved /dev/color FAQ:                                      │
+│                                                                              │
+│  • What is the mission of /dev/color?: /dev/color is dedicated to            │
+│  supporting and empowering Black technologists by fostering a strong         │
+│  community, providing career development resources, and advocating for       │
+│  diversity in the tech industry. The organization aims to help Black         │
+│  software engineers, founders, and leaders navigate challenges and a         │
+│                                                                              │
+│  • What types of events and networking opportunities does /dev/color         │
+│  provide?: /dev/color hosted six in-person events across major cities,       │
+│  including San Francisco, New York, Atlanta, and Seattle, with support from  │
+│  corporate partners like LinkedIn and Intuit. These events provided          │
+│  opportunities for Black technologists to connect, learn, and grow in a      │
+│  supportive environment. The                                                 │
+│                                                                              │
+│  • How does /dev/color collaborate with other organizations and tech         │
+│  companies?: In 2023, /dev/color partnered with organizations like Black     │
+│  Product Managers Network, ColorStack, and Goodie Nation to expand its       │
+│  reach and impact. The organization also collaborated with corporate         │
+│  partners such as Pinterest, Grammarly, and Concrete Rose Capital to host    │
+│  panels, networking events, an                                               │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+

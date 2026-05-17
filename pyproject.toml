@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "devcolor-rag"
+version = "0.1.0"
+description = "CLI RAG chatbot for /dev/color FAQ"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "sentence-transformers>=2.2.0",
+    "numpy>=1.24.0",
+    "requests>=2.31.0",
+    "rich>=13.7.0",
+    "scikit-learn>=1.3.0",
+    "psutil>=5.9.0",
+]
+
+[project.scripts]
+devcolorbot = "devcolor_rag.launcher:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

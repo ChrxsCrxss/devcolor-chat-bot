@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# devcolorbot — one command: venv + deps, Ollama, index, chat.
+# Run: ./devcolorbot   OR add this directory to PATH and run: devcolorbot
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+VENV_PY="$ROOT/.venv/bin/python"
+
+if [[ ! -x "$VENV_PY" ]]; then
+  python3 -m venv "$ROOT/.venv"
+  "$ROOT/.venv/bin/pip" install -q -e "$ROOT"
+fi
+
+exec "$VENV_PY" -m devcolor_rag.launcher "$@"
